@@ -1,4 +1,4 @@
-# ubxtranslator
+# ubxtranslator [![Build Status](https://travis-ci.org/dalymople/ubxtranslator.svg?branch=master)](https://travis-ci.org/dalymople/ubxtranslator)
 
 ## Overview
 This module provides a simple way to decode messages from uBlox GPS devices in the UBX format. 
@@ -13,6 +13,7 @@ Is this the fastest implementation of a UBX parser? Probably not. If speed is cr
 probably need to go write something in C. If you want something that is fast enough
 and easy to use, you are in the right place. Keep reading.
 
+Supports Python 3.5 and up.
 
 
 ## Quickstart
