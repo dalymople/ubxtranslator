@@ -17,13 +17,13 @@ ACK_CLS = core.Cls(0x05, 'ACK', [
 
 NAV_CLS = core.Cls(0x01, 'NAV', [
     core.Message(0x60, 'AOPSTATUS', [
-        core.Field('iTow', 'U4'),
+        core.Field('iTOW', 'U4'),
         core.Field('aopCfg', 'U1'),
         core.Field('status', 'U1'),
         core.PadByte(repeat=9),
     ]),
     core.Message(0x05, 'ATT', [
-        core.Field('iTow', 'U4'),
+        core.Field('iTOW', 'U4'),
         core.Field('version', 'U1'),
         core.PadByte(repeat=2),
         core.Field('roll', 'I4'),
@@ -34,14 +34,14 @@ NAV_CLS = core.Cls(0x01, 'NAV', [
         core.Field('accHeading', 'U4'),
     ]),
     core.Message(0x22, 'CLOCK', [
-        core.Field('iTow', 'U4'),
+        core.Field('iTOW', 'U4'),
         core.Field('clkB', 'I4'),
         core.Field('clkD', 'I4'),
         core.Field('tAcc', 'U4'),
         core.Field('fAcc', 'U4'),
     ]),
     core.Message(0x04, 'DOP', [
-        core.Field('iTow', 'U4'),
+        core.Field('iTOW', 'U4'),
         core.Field('gDOP', 'U2'),
         core.Field('pDOP', 'U2'),
         core.Field('tDOP', 'U2'),
@@ -51,12 +51,12 @@ NAV_CLS = core.Cls(0x01, 'NAV', [
         core.Field('eDOP', 'U2'),
     ]),
     core.Message(0x61, 'EOE', [
-        core.Field('iTow', 'U4'),
+        core.Field('iTOW', 'U4'),
     ]),
     core.Message(0x13, 'HPPOSECEF', [
         core.Field('version', 'U1'),
         core.PadByte(repeat=2),
-        core.Field('iTow', 'U4'),
+        core.Field('iTOW', 'U4'),
         core.Field('ecefX', 'I4'),
         core.Field('ecefY', 'I4'),
         core.Field('ecefZ', 'I4'),
@@ -69,7 +69,7 @@ NAV_CLS = core.Cls(0x01, 'NAV', [
     core.Message(0x14, 'HPPOSLLH', [
         core.Field('version', 'U1'),
         core.PadByte(repeat=2),
-        core.Field('iTow', 'U4'),
+        core.Field('iTOW', 'U4'),
         core.Field('lon', 'I4'),
         core.Field('lat', 'I4'),
         core.Field('height', 'I4'),
@@ -84,20 +84,20 @@ NAV_CLS = core.Cls(0x01, 'NAV', [
     core.Message(0x09, 'ODO', [
         core.Field('version', 'U1'),
         core.PadByte(repeat=2),
-        core.Field('iTow', 'U4'),
+        core.Field('iTOW', 'U4'),
         core.Field('distance', 'U4'),
         core.Field('totalDistance', 'U4'),
         core.Field('distanceStd', 'U4'),
     ]),
     core.Message(0x01, 'POSECEF', [
-        core.Field('iTow', 'U4'),
+        core.Field('iTOW', 'U4'),
         core.Field('ecefX', 'I4'),
         core.Field('ecefY', 'I4'),
         core.Field('ecefZ', 'I4'),
         core.Field('pAcc', 'U4'),
     ]),
     core.Message(0x02, 'POSLLH', [
-        core.Field('iTow', 'U4'),
+        core.Field('iTOW', 'U4'),
         core.Field('lon', 'I4'),
         core.Field('lat', 'I4'),
         core.Field('height', 'I4'),
