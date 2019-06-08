@@ -48,18 +48,6 @@ class UbxFieldTester(unittest.TestCase):
 
                 self.assertEqual(f.parse(iter(struct.unpack(f.fmt, packet))), ('TEST', value))
 
-    def test_ubx_field_repeat(self):
-        for i in range(1, 10):
-            for k, v in self.types.items():
-                with self.subTest(repeat=i, type_=k):
-                    f = Field('TEST', k, repeat=i)
-                    self.assertEqual(f.fmt, v['fmt'] * (i + 1))
-
-                    value = [v['type_'](0x0F) for _ in range(i + 1)]
-                    packet = struct.pack(f.fmt, *value)
-
-                    self.assertEqual(f.parse(iter(struct.unpack(f.fmt, packet))), ('TEST', value))
-
     def test_ubx_field_error(self):
         with self.assertRaises(ValueError):
             f = Field('TEST', 'U8')

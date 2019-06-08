@@ -45,7 +45,7 @@ class Field:
                  'U2': 'H', 'I2': 'h',
                  'U4': 'I', 'I4': 'i', 'R4': 'f',
                  'R8': 'd', 'C': 'c'}
-    __slots__ = ['name', '_type', 'repeat', ]
+    __slots__ = ['name', '_type', ]
 
     def __init__(self, name: str, type_: str, repeat: int = 0):
         self.name = name
@@ -54,33 +54,26 @@ class Field:
             raise ValueError('The provided _type of {} is not valid'.format(type_))
         self._type = type_
 
-        self.repeat = repeat
-
     @property
     def fmt(self):
         """Return the format char for use with the struct package"""
-        return Field.__types__[self._type] * (self.repeat + 1)
+        return Field.__types__[self._type]
 
     def parse(self, it: Iterator) -> tuple:
         """Return a tuple representing the provided value/s"""
         resp = []
-        for i in range(self.repeat + 1):
-            value = next(it)
+        value = next(it)
 
-            if self._type in ['U1', 'I1', 'U2', 'I2', 'U4', 'I4', ]:
-                resp.append(int(value))
+        if self._type in ['U1', 'I1', 'U2', 'I2', 'U4', 'I4', ]:
+            resp = int(value)
 
-            if self._type in ['R4', 'R8', ]:
-                resp.append(float(value))
+        if self._type in ['R4', 'R8', ]:
+            resp = float(value)
 
-            if self._type == 'C':
-                resp.append(value)
+        if self._type == 'C':
+            resp = value
 
-        if self.repeat == 0:
-            return self.name, resp[0]
-
-        else:
-            return self.name, resp
+        return self.name, resp
 
 
 class Flag:
