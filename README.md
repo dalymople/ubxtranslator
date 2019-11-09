@@ -26,10 +26,15 @@ Import the core module<br>
 
 If the message class you want has already been defined simply import it. 
 If not you will need to construct the messages and classes yourself, see the examples for more information.<br>
-`from ubxtranslator.predefined import CLS_ACK, CLS_NAV`
+`from ubxtranslator import predefined`
 
 Construct the parser<br>
-`parser = core.Parser([CLS_ACK, CLS_NAV])`
+```
+parser = core.Parser([
+  predefined.CLS_ACK, 
+  predefined.CLS_NAV
+])
+```
 
 Then you can use the parser to decode messages from any byte stream.<br>
 `cls_name, msg_name, payload = parser.receive_from(port)`
