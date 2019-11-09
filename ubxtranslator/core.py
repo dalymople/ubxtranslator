@@ -2,9 +2,9 @@
 
 import struct
 from collections import namedtuple
-from typing import List, Iterator
+from typing import List, Iterator, Union
 
-__all__ = ['PadByte', 'Field', 'Flag', 'BitField', 'Message', 'Cls', 'Parser', ]
+__all__ = ['PadByte', 'Field', 'Flag', 'BitField', 'RepeatedBlock', 'Message', 'Cls', 'Parser', ]
 
 
 class PadByte:
@@ -19,6 +19,10 @@ class PadByte:
 
     def __init__(self, repeat: int = 0):
         self.repeat = repeat
+
+    @property
+    def repeated_block(self):
+        return False
 
     @property
     def fmt(self):
@@ -47,12 +51,16 @@ class Field:
                  'R8': 'd', 'C': 'c'}
     __slots__ = ['name', '_type', ]
 
-    def __init__(self, name: str, type_: str, repeat: int = 0):
+    def __init__(self, name: str, type_: str):
         self.name = name
 
         if type_ not in Field.__types__:
             raise ValueError('The provided _type of {} is not valid'.format(type_))
         self._type = type_
+
+    @property
+    def repeated_block(self):
+        return False
 
     @property
     def fmt(self):
@@ -131,6 +139,7 @@ class BitField:
     __slots__ = ['name', '_type', '_subfields', '_nt', ]
     __types__ = {'X1': 'B', 'X2': 'H', 'X4': 'I'}
 
+    # noinspection PyProtectedMember
     def __init__(self, name: str, type_: str, subfields: List[Flag]):
         self.name = name
 
@@ -156,6 +165,10 @@ class BitField:
         self._nt = namedtuple(self.name, [f.name for f in self._subfields])
 
     @property
+    def repeated_block(self):
+        return False
+
+    @property
     def fmt(self) -> str:
         """Return the format char for use with the struct package"""
         return BitField.__types__[self._type]
@@ -164,6 +177,36 @@ class BitField:
         """Return a named tuple representing the provided value"""
         value = next(it)
         return self.name, self._nt(**{k: v for k, v in [x.parse(value) for x in self._subfields]})
+
+
+class RepeatedBlock:
+    """Defines a repeated block of Fields within a UBX Message
+
+    """
+    __slots__ = ['name', '_fields', 'repeat', '_nt', ]
+
+    def __init__(self, name: str, fields: List[Union[Field, BitField, PadByte]]):
+        self.name = name
+        self._fields = fields
+        self.repeat = 0
+        self._nt = namedtuple(self.name, [f.name for f in self._fields if hasattr(f, 'name')])
+
+    @property
+    def repeated_block(self):
+        return True
+
+    @property
+    def fmt(self):
+        """Return the format string for use with the struct package."""
+        return ''.join([field.fmt for field in self._fields]) * (self.repeat + 1)
+
+    def parse(self, it: Iterator) -> tuple:
+        """Return a tuple representing the provided value/s"""
+        resp = []
+        for i in range(self.repeat + 1):
+            resp.append(self._nt(**{k: v for k, v in [f.parse(it) for f in self._fields] if k is not None}))
+
+        return self.name, resp
 
 
 class Message:
@@ -182,7 +225,7 @@ class Message:
     will raise a ValueError
 
     """
-    __slots__ = ['_id', 'name', '_fields', '_nt', ]
+    __slots__ = ['_id', 'name', '_fields', '_nt', '_repeated_block', ]
 
     def __init__(self, id_: int, name: str, fields: list):
         if id_ < 0:
@@ -195,6 +238,13 @@ class Message:
         self.name = name
         self._fields = fields
         self._nt = namedtuple(self.name, [f.name for f in self._fields if hasattr(f, 'name')])
+        self._repeated_block = None
+
+        for field in fields:
+            if field.repeated_block:
+                if self._repeated_block is not None:
+                    raise ValueError('Cannot assign multiple repeated blocks to a message.')
+                self._repeated_block = field
 
     @property
     def id_(self):
@@ -203,21 +253,38 @@ class Message:
 
     @property
     def fmt(self):
-        """Return the format string for the struct package."""
-        return ''.join([f.fmt for f in self._fields])
+        """Return the format string for use with the struct package."""
+        return ''.join([field.fmt for field in self._fields])
 
     def parse(self, payload: bytes) -> namedtuple:
         """Return a named tuple parsed from the provided payload.
 
         If the provided payload is not the same length as what is implied by the format string
         then a ValueError is raised.
-
         """
-        fmt = self.fmt
 
-        if struct.calcsize(fmt) != len(payload):
-            raise ValueError('The payload length does not match the length implied by the message fields. ' +
-                             'Expected {} actual {}'.format(struct.calcsize(fmt), len(payload)))
+        payload_len = len(payload)
+
+        try:
+            self._repeated_block.repeat = 0
+        except AttributeError:
+            pass
+
+        while True:
+            fmt_len = struct.calcsize(self.fmt)
+
+            if fmt_len == payload_len:
+                break
+
+            if fmt_len > payload_len:
+                raise ValueError('The payload length does not match the length implied by the message fields. ' +
+                                 'Expected {} actual {}'.format(struct.calcsize(self.fmt), len(payload)))
+
+            try:
+                self._repeated_block.repeat += 1
+            except AttributeError:
+                raise ValueError('The payload length does not match the length implied by the message fields. ' +
+                                 'Expected {} actual {}'.format(struct.calcsize(self.fmt), len(payload)))
 
         it = iter(struct.unpack(self.fmt, payload))
 
@@ -269,6 +336,7 @@ class Cls:
 
     def register_msg(self, msg: Message):
         """Register a message type."""
+        # noinspection PyProtectedMember
         self._messages[msg._id] = msg
 
     def parse(self, msg_id, payload):

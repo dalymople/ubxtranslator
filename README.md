@@ -45,7 +45,6 @@ Want to contribute? Please feel free to submit issues or pull requests.
 Nothing in this package is very complicated, please have a crack and help me to improve this.
 
 - Add the ability to pack messages into packets for two way communications
-- Add repeated blocks
 - Add more and better tests
 - Add Field type RU1_3
 - Add async support

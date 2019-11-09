@@ -73,6 +73,61 @@ class UbxMsgTester(unittest.TestCase):
                 for i, k in enumerate(key_list):
                     self.assertEqual(getattr(resp, 'F{}'.format(i)), payload_parts[i])
 
+    def test_msg_repeated(self):
+        fields = [
+            RepeatedBlock('RB1', [
+                Field('F1', 'U1'),
+                PadByte(repeat=1),
+                BitField('F2', 'X1', [
+                    Flag('SF1', 0, 4),
+                    Flag('SF2', 4, 8)
+                ]),
+            ]),
+            Field('F3', 'U1'),
+            PadByte(repeat=2),
+        ]
+
+        m = Message(1, 'TEST', fields)
+        self.assertEqual(struct.calcsize(m.fmt), 8)
+
+        for i in range(100):
+            m._repeated_block.repeat = i
+            with self.subTest(msg='calc size', repeat=i):
+                self.assertEqual(struct.calcsize(m.fmt), (i * 4) + 8)
+
+        for i in range(1, 100):
+            payload = bytes([x & 0xFF for x in range((i * 4) + 8)])
+            name, resp = m.parse(payload)
+            with self.subTest(msg='parse', repeat=i):
+                self.assertEqual(name, 'TEST')
+                self.assertEqual(len(resp.RB1), i + 1)
+
+                for j in range(i + 1):
+                    self.assertEqual(resp.RB1[j].F1, (j * 4) & 0xFF)
+                    self.assertEqual(resp.RB1[j].F2.SF1, ((j * 4) + 3) & 0x0F)
+                    self.assertEqual(resp.RB1[j].F2.SF2, (((j * 4) + 3) & 0xF0) >> 4)
+
+                self.assertEqual(resp.F3, ((i * 4) + 4) & 0xFF)
+
+    def test_multiple_repeats(self):
+        fields = [
+            RepeatedBlock('RB1', [
+                Field('F1', 'U1'),
+                PadByte(repeat=1),
+                BitField('F2', 'X1', [
+                    Flag('SF1', 0, 4),
+                    Flag('SF2', 4, 8)
+                ]),
+            ]),
+            RepeatedBlock('RB2', [
+                Field('F3', 'U1'),
+                PadByte(repeat=2),
+            ]),
+        ]
+
+        with self.assertRaises(ValueError):
+            m = Message(1, 'TEST', fields)
+
 
 class UbxClsTester(unittest.TestCase):
     def test_cls(self):

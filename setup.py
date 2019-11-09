@@ -7,7 +7,7 @@ def readme():
 
 
 setup(name='ubxtranslator',
-      version='0.1',
+      version='0.1.1',
       description='A lightweight python library for translating UBX packets',
       long_description=readme(),
       classifiers=[

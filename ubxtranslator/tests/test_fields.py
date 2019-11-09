@@ -50,7 +50,7 @@ class UbxFieldTester(unittest.TestCase):
 
     def test_ubx_field_error(self):
         with self.assertRaises(ValueError):
-            f = Field('TEST', 'U8')
+            _ = Field('TEST', 'U8')
 
 
 class UbxBitSubFieldTester(unittest.TestCase):
@@ -125,3 +125,34 @@ class UbxBitFieldTester(unittest.TestCase):
                 name, resp = x4.parse(iter(struct.unpack(x4.fmt, packet)))
                 self.assertEqual(resp.S1, value & 0x0F)
                 self.assertEqual(resp.S2, (value & 0xF0) >> 4)
+
+
+class UbxRepeatedBlockTester(unittest.TestCase):
+    def test_repeat(self):
+        rb = RepeatedBlock('RB', fields=[
+            Field('F1', 'U1'),
+            PadByte(repeat=1),
+            BitField('F2', 'X1', [
+                Flag('S1', 0, 4),
+                Flag('S2', 4, 8),
+            ]),
+        ])
+
+        for i in range(10):
+            with self.subTest(i=i):
+                rb.repeat = i
+                self.assertEqual(rb.fmt, 'BxxB' * (i + 1))
+
+    def test_parse(self):
+        rb = RepeatedBlock('RB', fields=[
+            Field('F1', 'U1'),
+            PadByte(repeat=1),
+            BitField('F2', 'X1', [
+                Flag('S1', 0, 4),
+                Flag('S2', 4, 8),
+            ]),
+        ])
+
+        packet = struct.pack(rb.fmt, 0x01, 0x02)
+        name, resp = rb.parse(iter(struct.unpack(rb.fmt, packet)))
+        self.assertEqual(len(resp), 1)
