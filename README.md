@@ -3,7 +3,7 @@
 ## Overview
 This module provides a simple way to decode messages from uBlox GPS devices in the UBX format. 
 Like the high accuracy NEO-M8U module that I have created, 
-<a href="https://www.tindie.com/products/dalymople/gps-dead-reckoning-board-neo-m8u-gnss">click here for more info.</a><br>
+<a href="https://www.tindie.com/products/dalymople/gps-dead-reckoning-board-neo-m8u-compact/">click here for more info.</a><br>
 <br>
 This package has no dependencies! This is written in pure python using only the standard lib and supports any
 standard byte stream. The predefined messages are not added to the parser by default, this allows
