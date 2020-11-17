@@ -39,8 +39,23 @@ parser = core.Parser([
 Then you can use the parser to decode messages from any byte stream.<br>
 `cls_name, msg_name, payload = parser.receive_from(port)`
 
-The payload is the named tuple of the message<br>
+The result is a tuple which can be unpacked as shown above.<br>
+The variables `cls_name` and `msg_name` are strings, ie. `'NAV'`, `'PVT'`.<br>
+
+The payload is the namedtuple of the message and can be accessed like an object. The attributes share the names of the fields.<br>
 `print(cls_name, msg_name, payload.lat, payload.lng)`
+
+Bitfields are also returned as namedtuples and can be accessed the same way.<br>
+`print(payload.flags.channel)`
+
+Repeated Blocks are returned as a list of blocks, the fields within each block are also named tuples. All of the repeated blocks in the predefined messages are name `RB`.<br>
+```
+for i in range(len(payload.RB)):
+  print(payload.RB[i].gnssId, payload.RB[i].flags.health)
+```
+
+The best way to look at what fields are available is where the fields are defined. However, if you want to inspect on the fly you can either `help(payload)` and look at the attributes, or use the named tuple protected method `payload._asdict()` which will return an ordered dict of all of the attributes.
+
 
 ## Examples
 For full examples see the examples directory. 
