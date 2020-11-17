@@ -8,7 +8,7 @@ and class.
 
 from ubxtranslator.core import Message, Cls, PadByte, Field, Flag, BitField
 
-CustomClass = Cls(0x01, 'NAV', [
+CUSTOM_CLS = Cls(0x01, 'NAV', [
     Message(0x07, 'PVT', [
         Field('iTOW', 'U4'),
         Field('year', 'U2'),
