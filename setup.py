@@ -10,6 +10,7 @@ setup(name='ubxtranslator',
       version='0.2.1',
       description='A lightweight python library for translating UBX packets',
       long_description=readme(),
+      long_description_content_type="text/markdown",
       classifiers=[
           'Development Status :: 3 - Alpha',
           'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
