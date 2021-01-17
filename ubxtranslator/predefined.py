@@ -313,7 +313,7 @@ NAV_CLS = core.Cls(0x01, 'NAV', [
             core.Field('prc', 'I2'),
         ])
     ]),
-    core.Message(0x06, 'STATUS', [
+    core.Message(0x03, 'STATUS', [
         core.Field('iTOW', 'U4'),
         core.Field('gpsFix', 'U1'),
         core.BitField('flags', 'X1', [
@@ -332,6 +332,30 @@ NAV_CLS = core.Cls(0x01, 'NAV', [
         ]),
         core.Field('ttff', 'U4'),
         core.Field('msss', 'U4'),
+    ]),
+    core.Message(0x06, 'SOL', [
+        core.Field('iTOW', 'U4'),
+        core.Field('fTOW', 'I4'),
+        core.Field('week', 'I2'),
+        core.Field('gpsFix', 'U1'),
+        core.BitField('flags', 'X1', [
+            core.Flag('gpsFixOK', 0, 1),
+            core.Flag('diffSoln', 1, 2),
+            core.Flag('wknSet', 2, 3),
+            core.Flag('towSet', 3, 4),
+        ]),
+        core.Field('ecefX', 'I4'),
+        core.Field('ecefY', 'I4'),
+        core.Field('ecefZ', 'I4'),
+        core.Field('pAcc', 'U4'),
+        core.Field('ecefVX', 'I4'),
+        core.Field('ecefVY', 'I4'),
+        core.Field('ecefVZ', 'I4'),
+        core.Field('sAcc', 'U4'),
+        core.Field('pDOP', 'U2'),
+        core.PadByte(),
+        core.Field('numSV', 'U1'),
+        core.PadByte(repeat=3),
     ]),
     core.Message(0x30, 'SVINFO', [
         core.Field('iTOW', 'U4'),
@@ -398,3 +422,59 @@ NAV_CLS = core.Cls(0x01, 'NAV', [
         core.Field('cAcc', 'U4'),
     ]),
 ])
+
+RXM_CLS = core.Cls(0x02, 'RXM', [
+    core.Message(0x13, 'SFRBX', [
+        core.Field('gnssId', 'U1'),
+        core.Field('svId', 'U1'),
+        core.PadByte(),
+        core.Field('freqId', 'U1'),
+        core.Field('numWords', 'U1'),
+        core.PadByte(),
+        core.Field('version', 'U1'),
+        core.PadByte(),
+        core.RepeatedBlock('RB', [
+            core.Field('dwrd', 'U4'),
+        ]),
+    ]),
+    core.Message(0x15, 'RAWX', [
+        core.Field('rcvTOW', 'R8'),
+        core.Field('week', 'U2'),
+        core.Field('leapS', 'I1'),
+        core.Field('numMeas', 'U1'),
+        core.BitField('recStat', 'X1', [
+            core.Flag('leapSec', 0, 1),
+            core.Flag('clkReset', 1, 2),
+        ]),
+        core.Field('version', 'U1'),
+        core.PadByte(repeat=1),
+        core.RepeatedBlock('RB', [
+            core.Field('prMes', 'R8'),
+            core.Field('cpMes', 'R8'),
+            core.Field('doMes', 'R4'),
+            core.Field('gnssId', 'U1'),
+            core.Field('svId', 'U1'),
+            core.Field('sigId', 'U1'),
+            core.Field('freqId', 'U1'),
+            core.Field('locktime', 'U2'),
+            core.Field('cno', 'U1'),
+            core.BitField('prStdev', 'X1', [
+                core.Flag('prStd', 0, 4),
+            ]),
+            core.BitField('cpStdev', 'X1', [
+                core.Flag('cpStd', 0, 4),
+            ]),
+            core.BitField('doStdev', 'X1', [
+                core.Flag('doStd', 0, 4),
+            ]),
+            core.BitField('rtkStat', 'X1', [
+                core.Flag('prValid', 0, 1),
+                core.Flag('cpValid', 1, 2),
+                core.Flag('halfCyc', 2, 3),
+                core.Flag('subHalfCyc', 3, 4),
+            ]),
+            core.PadByte()
+        ])
+    ])
+])
+
