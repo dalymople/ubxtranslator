@@ -367,6 +367,8 @@ class Parser:
     supports a `read` method and returns bytes. It is up to the implementation to determine how to get the
     UBX packets from the device. The typical way to do this would be a serial package like pyserial, see the
     examples file.
+
+    # TODO add info about the message sending methods.
     """
     PREFIX = bytes((0xB5, 0x62))
 
@@ -461,3 +463,11 @@ class Parser:
             check_b &= 0xFF
 
         return bytes((check_a, check_b))
+
+    def prepare_msg(self, cls_name, msg_name):
+        # TODO find the class and message and return a blank message ready for filling
+        raise NotImplementedError('Sorry this has not been implemented yet!')
+
+    def transfer_to(self, msg, stream):
+        # TODO pack the message into bytes and transfer to the byte stream
+        raise NotImplementedError('Sorry this has not been implemented yet!')
