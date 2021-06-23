@@ -430,7 +430,7 @@ class Parser:
         # Read the checksum
         checksum_sup = stream.read(2)
         if len(checksum_sup) != 2:
-            raise IOError("A stream read returned {} bytes, expected 2 bytes".format(len(buff)))
+            raise IOError("A stream read returned {} bytes, expected 2 bytes".format(len(checksum_sup)))
 
         checksum_cal = self._generate_fletcher_checksum(buff)
         if checksum_cal != checksum_sup:
