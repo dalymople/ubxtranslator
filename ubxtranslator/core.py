@@ -290,13 +290,13 @@ class Message:
                 break
 
             if fmt_len > payload_len:
-                raise ValueError('The payload length does not match the length implied by the message fields. ' +
+                raise IOError('The payload length does not match the length implied by the message fields. ' +
                                  'Expected {} actual {}'.format(struct.calcsize(self.fmt), payload_len))
 
             try:
                 self._repeated_block.repeat += 1
             except AttributeError:
-                raise ValueError('The payload length does not match the length implied by the message fields. ' +
+                raise IOError('The payload length does not match the length implied by the message fields. ' +
                                  'Expected {} actual {}'.format(struct.calcsize(self.fmt), payload_len))
 
 
@@ -391,6 +391,12 @@ class Parser:
     def register_cls(self, cls: Cls):
         """Register a message  class."""
         self.classes[cls.id_] = cls
+
+    async def async_receive_from(self, stream) -> namedtuple:
+        """Receive a message from a stream and return as a namedtuple.
+        raise IOError or ValueError on errors.
+        """
+        pass
 
     def receive_from(self, stream) -> namedtuple:
         """Receive a message from a stream and return as a namedtuple.
