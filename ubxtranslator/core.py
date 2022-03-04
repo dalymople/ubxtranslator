@@ -263,7 +263,20 @@ class Message:
         then a ValueError is raised.
         """
 
-        payload_len = len(payload)
+        self.check_payload_length(len(payload))
+
+        it = iter(struct.unpack(self.fmt, payload))
+
+        return self.name, self._nt(**{k: v for k, v in [f.parse(it) for f in self._fields] if k is not None})
+
+    def check_payload_length(self, payload_len: int):
+        """Check whether payload_len is a valid length for this type of message.
+
+        Raises ValueError if the length is not valid.
+
+        self._repeated_block.repeat will be set appropriately after
+        returning (if relevant for this message type).
+        """
 
         try:
             self._repeated_block.repeat = 0
@@ -278,17 +291,13 @@ class Message:
 
             if fmt_len > payload_len:
                 raise ValueError('The payload length does not match the length implied by the message fields. ' +
-                                 'Expected {} actual {}'.format(struct.calcsize(self.fmt), len(payload)))
+                                 'Expected {} actual {}'.format(struct.calcsize(self.fmt), payload_len))
 
             try:
                 self._repeated_block.repeat += 1
             except AttributeError:
                 raise ValueError('The payload length does not match the length implied by the message fields. ' +
-                                 'Expected {} actual {}'.format(struct.calcsize(self.fmt), len(payload)))
-
-        it = iter(struct.unpack(self.fmt, payload))
-
-        return self.name, self._nt(**{k: v for k, v in [f.parse(it) for f in self._fields] if k is not None})
+                                 'Expected {} actual {}'.format(struct.calcsize(self.fmt), payload_len))
 
 
 class Cls:
@@ -410,6 +419,8 @@ class Parser:
             raise ValueError("Received unsupported message id of {:x} in class {:x}".format(
                 msg_id, msg_cls))
 
+        self.classes[msg_cls][msg_id].check_payload_length(length)
+
         # Read the payload
         buff += stream.read(length)
         if len(buff) != (4 + length):
@@ -419,7 +430,7 @@ class Parser:
         # Read the checksum
         checksum_sup = stream.read(2)
         if len(checksum_sup) != 2:
-            raise IOError("A stream read returned {} bytes, expected 2 bytes".format(len(buff)))
+            raise IOError("A stream read returned {} bytes, expected 2 bytes".format(len(checksum_sup)))
 
         checksum_cal = self._generate_fletcher_checksum(buff)
         if checksum_cal != checksum_sup:
