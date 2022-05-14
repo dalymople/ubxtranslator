@@ -215,8 +215,8 @@ class UbxParserTester(unittest.TestCase):
 
                 parser.receive_from(test_stream)
 
-        with self.subTest(msg='Test bad length'):
-            with self.assertRaises(IOError):
+        with self.subTest(msg='Test bad length with sufficient data'):
+            with self.assertRaises(ValueError):
                 test_packet = bytes([1, 1, 7, 0, 0, 1, 2, 3, 4, 5])
                 test_packet = parser.PREFIX + test_packet + parser._generate_fletcher_checksum(test_packet)
 
@@ -224,7 +224,7 @@ class UbxParserTester(unittest.TestCase):
 
                 parser.receive_from(test_stream)
 
-        with self.subTest(msg='Test bad length'):
+        with self.subTest(msg='Test bad length with insufficient data'):
             with self.assertRaises(IOError):
                 test_packet = bytes([1, 1, 6, 0, 0, 1, 2, 3, 5])
                 test_packet = parser.PREFIX + test_packet + parser._generate_fletcher_checksum(test_packet)
