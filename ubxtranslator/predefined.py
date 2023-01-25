@@ -502,11 +502,6 @@ RXM_CLS = core.Cls(0x02, 'RXM', [
         core.Field('plVel3', 'U4'),
         core.Field('plPosHorizOrient', 'U2'),
         core.Field('plVelHorizOrient', 'U2'),
-        core.Field('plVel1', 'U4'),
-        core.Field('plVel2', 'U4'),
-        core.Field('plVel3', 'U4'),
-        core.Field('plPosHorizOrient', 'U2'),
-        core.Field('plVelHorizOrient', 'U2'),
         core.Field('plTime', 'U4'),
         core.PadByte(repeat=3),
     ])
