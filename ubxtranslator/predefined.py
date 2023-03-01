@@ -428,16 +428,38 @@ NAV_CLS = core.Cls(0x01, 'NAV', [
         core.Field('sAcc', 'U4'),
         core.Field('cAcc', 'U4'),
     ]),
+    core.Message(0x62, 'PL', [
+        core.Field('msgVersion', 'U1'),
+        core.Field('tmirCoeff', 'U1'),
+        core.Field('tmirExp', 'I1'),
+        core.Field('plPosValid', 'U1'),
+        core.Field('plPosFrame', 'U1'),
+        core.Field('plVelValid', 'U1'),
+        core.Field('plVelFrame', 'U1'),
+        core.Field('plTimeValid', 'U1'),
+        core.PadByte(repeat=3),
+        core.Field('iTow', 'U4'),
+        core.Field('plPos1', 'U4'),
+        core.Field('plPos2', 'U4'),
+        core.Field('plPos3', 'U4'),
+        core.Field('plVel1', 'U4'),
+        core.Field('plVel2', 'U4'),
+        core.Field('plVel3', 'U4'),
+        core.Field('plPosHorizOrient', 'U2'),
+        core.Field('plVelHorizOrient', 'U2'),
+        core.Field('plTime', 'U4'),
+        core.PadByte(repeat=3),
+    ])
 ])
 
 RXM_CLS = core.Cls(0x02, 'RXM', [
     core.Message(0x13, 'SFRBX', [
         core.Field('gnssId', 'U1'),
         core.Field('svId', 'U1'),
-        core.PadByte(),
+        core.Field('sigId', 'U1'),
         core.Field('freqId', 'U1'),
         core.Field('numWords', 'U1'),
-        core.PadByte(),
+        core.Field('chn', 'U1'),
         core.Field('version', 'U1'),
         core.PadByte(),
         core.RepeatedBlock('RB', [
@@ -474,7 +496,7 @@ RXM_CLS = core.Cls(0x02, 'RXM', [
             core.BitField('doStdev', 'X1', [
                 core.Flag('doStd', 0, 4),
             ]),
-            core.BitField('rtkStat', 'X1', [
+            core.BitField('trkStat', 'X1', [
                 core.Flag('prValid', 0, 1),
                 core.Flag('cpValid', 1, 2),
                 core.Flag('halfCyc', 2, 3),
@@ -482,28 +504,62 @@ RXM_CLS = core.Cls(0x02, 'RXM', [
             ]),
             core.PadByte()
         ])
+    ])
+])
+
+
+MON_CLS = core.Cls(0x0A, 'MON', [
+    core.Message(0x09, 'HW', [
+        core.Field('pinSel', 'U4'),
+        core.Field('pinBank', 'U4'),
+        core.Field('pinDir', 'U4'),
+        core.Field('pinVal', 'U4'),
+        core.Field('noisePerMS', 'U2'),
+        core.Field('agcCnt', 'U2'),
+        core.Field('aStatus', 'U1'),
+        core.Field('aPower', 'U1'),
+        core.Field('flags', 'U1'),
+        core.PadByte(),
+        core.Field('usedMask', 'U4'),
+        core.RepeatedBlock('RB', [
+            core.Field('VP', 'U1'),
+        ]),
+        core.Field('jamInd', 'U1'),
+        core.PadByte(repeat=1),
+        core.Field('pinIrq', 'U4'),
+        core.Field('pullH', 'U4'),
+        core.Field('pullL', 'U4')
+    ])
+])
+
+
+ESF_CLS = core.Cls(0x10, 'ESF', [
+    core.Message(0x02, 'MEAS', [
+        core.Field('time_tag', 'U4'),
+        core.Field('flags', 'U2'),
+        core.Field('id', 'U2'),
+        core.RepeatedBlock('RB', [
+            core.Field('data', 'U4')
+        ]),
+        core.Field('calib_tag', 'U4')
     ]),
-    core.Message(0x62, 'PL', [
-        core.Field('msgVersion', 'U1'),
-        core.Field('tmirCoeff', 'U1'),
-        core.Field('tmirExp', 'I1'),
-        core.Field('plPosValid', 'U1'),
-        core.Field('plPosFrame', 'U1'),
-        core.Field('plVelValid', 'U1'),
-        core.Field('plVelFrame', 'U1'),
-        core.Field('plTimeValid', 'U1'),
+    core.Message(0x03, 'RAW', [
+        core.Field('msss', 'U4'),
+        core.RepeatedBlock('RB', [
+            core.Field('data', 'U4'),
+            core.Field('sensor_time_tag', 'U4')
+        ])
+    ]),
+    core.Message(0x15, 'INS', [
+        core.Field('bitfield0', 'U4'),
         core.PadByte(repeat=3),
-        core.Field('iTow', 'U4'),
-        core.Field('plPos1', 'U4'),
-        core.Field('plPos2', 'U4'),
-        core.Field('plPos3', 'U4'),
-        core.Field('plVel1', 'U4'),
-        core.Field('plVel2', 'U4'),
-        core.Field('plVel3', 'U4'),
-        core.Field('plPosHorizOrient', 'U2'),
-        core.Field('plVelHorizOrient', 'U2'),
-        core.Field('plTime', 'U4'),
-        core.PadByte(repeat=3),
+        core.Field('i_tow', 'U4'),
+        core.Field('x_ang_rate', 'I4'),
+        core.Field('y_ang_rate', 'I4'),
+        core.Field('z_ang_rate', 'I4'),
+        core.Field('x_accel', 'I4'),
+        core.Field('y_accel', 'I4'),
+        core.Field('z_accel', 'I4')
     ])
 ])
 
