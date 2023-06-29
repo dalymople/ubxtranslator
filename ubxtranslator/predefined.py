@@ -536,17 +536,28 @@ MON_CLS = core.Cls(0x0A, 'MON', [
 ESF_CLS = core.Cls(0x10, 'ESF', [
     core.Message(0x02, 'MEAS', [
         core.Field('time_tag', 'U4'),
-        core.Field('flags', 'U2'),
+        core.BitField('flags', 'X2', [
+            core.Flag('timeMarkSent', 0, 2),
+            core.Flag('timeMarkEdge', 2, 3),
+            core.Flag('calibTtagValid', 3, 4),
+            core.Flag('numMeas', 11, 16)
+        ]),
         core.Field('id', 'U2'),
         core.RepeatedBlock('RB', [
-            core.Field('data', 'U4')
+            core.BitField('data', 'X4', [
+                core.Flag('dataField', 0, 24),
+                core.Flag('dataType', 24, 30)
+            ]),
         ]),
         core.Field('calib_tag', 'U4')
     ]),
     core.Message(0x03, 'RAW', [
         core.Field('msss', 'U4'),
         core.RepeatedBlock('RB', [
-            core.Field('data', 'U4'),
+            core.BitField('data', 'X4', [
+                core.Flag('dataField', 0, 24),
+                core.Flag('dataType', 24, 30)
+            ]),
             core.Field('sensor_time_tag', 'U4')
         ])
     ]),
