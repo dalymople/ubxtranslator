@@ -1,4 +1,4 @@
-# ubxtranslator [![Build Status](https://travis-ci.org/dalymople/ubxtranslator.svg?branch=master)](https://travis-ci.org/dalymople/ubxtranslator)
+# ubxtranslator ![Build Status](https://github.com/dalymople/ubxtranslator/actions/workflows/Tests.yml/badge.svg)
 
 ## Overview
 This module provides a simple way to decode messages from uBlox GPS devices in the UBX format. 
