@@ -1,6 +1,6 @@
 import unittest
 
-from . import test_core, test_fields
+from . import test_core, test_fields, test_async
 
 
 def suite():
@@ -16,6 +16,9 @@ def suite():
     suite.addTest(test_core.UbxMsgTester())
     suite.addTest(test_core.UbxClsTester())
     suite.addTest(test_core.UbxParserTester())
+
+    # test async
+    suite.addTest(test_async.UbxAsyncParserTester())
 
     return suite
 

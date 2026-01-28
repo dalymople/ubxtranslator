@@ -67,4 +67,3 @@ Nothing in this package is very complicated, please have a crack and help me to 
 - Add the ability to pack messages into packets for two way communications
 - Add more and better tests
 - Add Field type RU1_3
-- Add async support

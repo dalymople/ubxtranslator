@@ -392,13 +392,6 @@ class Parser:
         """Register a message  class."""
         self.classes[cls.id_] = cls
 
-    async def async_receive_from(self, stream) -> namedtuple:
-        """Receive a message from a stream and return as a namedtuple.
-        raise IOError in case of errors due to insufficient data.
-        raise ValueError in case of errors due to sufficient but invalid data.
-        """
-        pass
-
     def receive_from(self, stream) -> namedtuple:
         """Receive a message from a stream and return as a namedtuple.
         raise IOError in case of errors due to insufficient data.
@@ -448,6 +441,44 @@ class Parser:
 
         return self.classes[msg_cls].parse(msg_id, buff[4:])
 
+    async def receive_from_async(self, stream) -> namedtuple:
+        """Async version of receive_from."""
+        while True:
+            # Search for the prefix
+            buff = await self._read_until_async(stream, terminator=Parser.PREFIX)
+            if buff[-2:] == Parser.PREFIX:
+                break
+
+        # read the first four bytes
+        buff = await stream.readexactly(4)
+
+        if len(buff) != 4:
+            raise IOError("A stream read returned {} bytes, expected 4 bytes".format(len(buff)))
+
+        # convert them into the packet descriptors
+        msg_cls, msg_id, length = struct.unpack("BBH", buff)
+
+        # check the packet validity
+        if msg_cls not in self.classes:
+            raise ValueError("Received unsupported message class of {:x}".format(msg_cls))
+        if msg_id not in self.classes[msg_cls]:
+            raise ValueError("Received unsupported message id of {:x} in class {:x}".format(msg_id, msg_cls))
+
+        # Read the payload
+        payload = await stream.readexactly(length)
+        full_msg_for_checksum = buff + payload
+
+        # Read the checksum
+        checksum_sup = await stream.readexactly(2)
+        checksum_cal = self._generate_fletcher_checksum(full_msg_for_checksum)
+
+        if checksum_cal != checksum_sup:
+            raise ValueError("Checksum mismatch. Calculated {:x} {:x}, received {:x} {:x}".format(
+                checksum_cal[0], checksum_cal[1], checksum_sup[0], checksum_sup[1]
+            ))
+
+        return self.classes[msg_cls].parse(msg_id, payload)
+
     @staticmethod
     def _read_until(stream, terminator: bytes, size=None):
         """Read from the stream until the terminator byte/s are read.
@@ -457,6 +488,24 @@ class Parser:
         line = bytearray()
         while True:
             c = stream.read(1)
+            if c:
+                line += c
+                if line[-term_len:] == terminator:
+                    break
+                if size is not None and len(line) >= size:
+                    break
+            else:
+                break
+
+        return bytes(line)
+
+    @staticmethod
+    async def _read_until_async(stream, terminator: bytes, size=None):
+        """Async version of Parser._read_until."""
+        term_len = len(terminator)
+        line = bytearray()
+        while True:
+            c = await stream.read(1)
             if c:
                 line += c
                 if line[-term_len:] == terminator:
