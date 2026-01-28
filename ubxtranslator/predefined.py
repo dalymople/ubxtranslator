@@ -9,7 +9,7 @@ ACK_CLS = core.Cls(0x05, 'ACK', [
         core.Field('clsID', 'U1'),
         core.Field('msgID', 'U1'),
     ]),
-    core.Message(0x00, 'NAK', [
+    core.Message(0x01, 'NAK', [
         core.Field('clsID', 'U1'),
         core.Field('msgID', 'U1'),
     ])
@@ -181,8 +181,7 @@ NAV_CLS = core.Cls(0x01, 'NAV', [
         core.BitField('flags', 'X1', [
             core.Flag('gnssFixOK', 0, 1),
             core.Flag('diffSoln', 1, 2),
-            core.Flag('psmState', 2, 5),
-            core.Flag('headVehValid', 5, 6),
+            core.Flag('headVehValid', 2, 5),
             core.Flag('carrSoln', 6, 8),
         ]),
         core.BitField('flags2', 'X1', [
@@ -218,19 +217,13 @@ NAV_CLS = core.Cls(0x01, 'NAV', [
         core.Field('relPosN', 'I4'),
         core.Field('relPosE', 'I4'),
         core.Field('relPosD', 'I4'),
-        core.Field('relPosLength', 'I4'),
-        core.Field('relPosHeading', 'I4'),
-        core.PadByte(repeat=3),
         core.Field('relPosHPN', 'I1'),
         core.Field('relPosHPE', 'I1'),
         core.Field('relPosHPD', 'I1'),
-        core.Field('relPosHPLength', 'I1'),
+        core.PadByte(),
         core.Field('accN', 'U4'),
         core.Field('accE', 'U4'),
         core.Field('accD', 'U4'),
-        core.Field('accLength', 'U4'),
-        core.Field('accHeading', 'U4'),
-        core.PadByte(repeat=3),
         core.BitField('flags', 'X4', [
             core.Flag('gnssFixOK', 0, 1),
             core.Flag('diffSoln', 1, 2),
