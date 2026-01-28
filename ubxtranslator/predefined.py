@@ -98,7 +98,10 @@ NAV_CLS = core.Cls(0x01, 'NAV', [
     ]),
     core.Message(0x14, 'HPPOSLLH', [
         core.Field('version', 'U1'),
-        core.PadByte(repeat=2),
+        core.PadByte(repeat=1),
+        core.BitField('flags', 'X1', [
+            core.Flag('invalidLlh', 0, 1),
+        ]),
         core.Field('iTOW', 'U4'),
         core.Field('lon', 'I4'),
         core.Field('lat', 'I4'),
