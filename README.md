@@ -24,7 +24,7 @@ Install the package with pip<br>
 Import the core module<br>
 `from ubxtranslator import core`
 
-If the message class you want has already been defined simply import it. 
+If the message class you want has already been defined, just import it. 
 If not you will need to construct the messages and classes yourself, see the examples for more information.<br>
 `from ubxtranslator import predefined`
 
@@ -39,8 +39,8 @@ parser = core.Parser([
 Then you can use the parser to decode messages from any byte stream.<br>
 `cls_name, msg_name, payload = parser.receive_from(port)`
 
-The result is a tuple which can be unpacked as shown above.<br>
-The variables `cls_name` and `msg_name` are strings, ie. `'NAV'`, `'PVT'`.<br>
+The result is a tuple that can be unpacked as shown above.<br>
+The variables `cls_name` and `msg_name` are strings, i.e. `'NAV'`, `'PVT'`.<br>
 
 The payload is the namedtuple of the message and can be accessed like an object. The attributes share the names of the fields.<br>
 `print(cls_name, msg_name, payload.lat, payload.lng)`
@@ -48,7 +48,8 @@ The payload is the namedtuple of the message and can be accessed like an object.
 Bitfields are also returned as namedtuples and can be accessed the same way.<br>
 `print(payload.flags.channel)`
 
-Repeated Blocks are returned as a list of blocks, the fields within each block are also named tuples. All of the repeated blocks in the predefined messages are name `RB`.<br>
+Repeated Blocks are returned as a list of blocks, the fields within each block are also named tuples. 
+All of the repeated blocks in the predefined messages are name `RB`.<br>
 ```
 for i in range(len(payload.RB)):
   print(payload.RB[i].gnssId, payload.RB[i].flags.health)
@@ -64,6 +65,5 @@ For full examples see the examples directory.
 Want to contribute? Please feel free to submit issues or pull requests. 
 Nothing in this package is very complicated, please have a crack and help me to improve this.
 
-- Add the ability to pack messages into packets for two way communications
 - Add more and better tests
 - Add Field type RU1_3

@@ -2,9 +2,11 @@
 
 import struct
 from collections import namedtuple
-from typing import List, Iterator, Union
+from typing import List, Iterator, Union, Tuple, Any
 
-__all__ = ['PadByte', 'Field', 'Flag', 'BitField', 'RepeatedBlock', 'Message', 'Cls', 'Parser', ]
+__all__ = ['PadByte', 'Field', 'Flag', 'BitField', 'RepeatedBlock', 'Message', 'Cls', 'Parser']
+
+
 
 
 class PadByte:
@@ -39,7 +41,7 @@ class Field:
     """A field type that is used to describe most `normal` fields.
 
     The descriptor code is as per the uBlox data sheet available;
-    https://www.u-blox.com/sites/default/files/products/documents/u-blox8-M8_ReceiverDescrProtSpec_%28UBX-13003221%29_Public.pdf
+    https://www.u-blox.com/sites/default/files/products/documents/u-blox8-M8_ReceiverDescrProtSpec_UBX-13003221.pdf
 
     Field types that are variable length are not supported at this stage.
 
@@ -118,16 +120,20 @@ class Flag:
         for i in range(start, stop):
             self._mask |= 0x01 << i
 
-    def parse(self, value) -> tuple:
+    def parse(self, value) -> Tuple[str, int,]:
         """Return a tuple representing the provided value"""
         return self.name, (value & self._mask) >> self._start
+
+    def pack(self, value: int) -> int:
+        """Return the shifted value to be ORed into the bitfield"""
+        return (value << self._start) & self._mask
 
 
 class BitField:
     """A bit field type made up of flags.
 
     The bit field uses the types described within the uBlox data sheet:
-    https://www.u-blox.com/sites/default/files/products/documents/u-blox8-M8_ReceiverDescrProtSpec_%28UBX-13003221%29_Public.pdf
+    https://www.u-blox.com/sites/default/files/products/documents/u-blox8-M8_ReceiverDescrProtSpec_UBX-13003221.pdf
 
     Flags should be passed within the constructor and should not be added after
     the class has been created. The constructor does check whether the flag field
@@ -165,7 +171,7 @@ class BitField:
         self._nt = namedtuple(self.name, [f.name for f in self._subfields])
 
     @property
-    def repeated_block(self):
+    def repeated_block(self) -> bool:
         return False
 
     @property
@@ -173,10 +179,21 @@ class BitField:
         """Return the format char for use with the struct package"""
         return BitField.__types__[self._type]
 
-    def parse(self, it: Iterator) -> namedtuple:
+    def parse(self, it: Iterator) -> Tuple[str, Any]:
         """Return a named tuple representing the provided value"""
         value = next(it)
         return self.name, self._nt(**{k: v for k, v in [x.parse(value) for x in self._subfields]})
+
+    def pack(self, values: Any) -> int:
+        """Return the combined integer value of all flags"""
+        res = 0
+        if isinstance(values, dict):
+            for sf in self._subfields:
+                res |= sf.pack(values.get(sf.name, 0))
+        else:
+            for sf in self._subfields:
+                res |= sf.pack(getattr(values, sf.name, 0))
+        return res
 
 
 class RepeatedBlock:
@@ -192,15 +209,15 @@ class RepeatedBlock:
         self._nt = namedtuple(self.name, [f.name for f in self._fields if hasattr(f, 'name')])
 
     @property
-    def repeated_block(self):
+    def repeated_block(self) -> bool:
         return True
 
     @property
-    def fmt(self):
+    def fmt(self) -> str:
         """Return the format string for use with the struct package."""
         return ''.join([field.fmt for field in self._fields]) * (self.repeat + 1)
 
-    def parse(self, it: Iterator) -> tuple:
+    def parse(self, it: Iterator) -> Tuple[str, Any]:
         """Return a tuple representing the provided value/s"""
         resp = []
         for i in range(self.repeat + 1):
@@ -208,12 +225,34 @@ class RepeatedBlock:
 
         return self.name, resp
 
+    def pack(self, values: List[Any]) -> List[Any]:
+        """Flatten values of repeated block items into a list for struct.pack"""
+        res = []
+        for item in values:
+            if isinstance(item, dict):
+                for f in self._fields:
+                    if isinstance(f, BitField):
+                        res.append(f.pack(item.get(f.name, {})))
+                    elif isinstance(f, Field):
+                        res.append(item.get(f.name, 0 if f._type != 'C' else b'\x00'))
+                    elif isinstance(f, PadByte):
+                        pass
+            else:
+                for f in self._fields:
+                    if isinstance(f, BitField):
+                        res.append(f.pack(getattr(item, f.name, {})))
+                    elif isinstance(f, Field):
+                        res.append(getattr(item, f.name, 0 if f._type != 'C' else b'\x00'))
+                    elif isinstance(f, PadByte):
+                        pass
+        return res
+
 
 class Message:
     """Defines a UBX message.
 
     The Messages are described in the data sheet:
-    https://www.u-blox.com/sites/default/files/products/documents/u-blox8-M8_ReceiverDescrProtSpec_%28UBX-13003221%29_Public.pdf
+    https://www.u-blox.com/sites/default/files/products/documents/u-blox8-M8_ReceiverDescrProtSpec_UBX-13003221.pdf
 
     The supplied name should be upper case. eg. PVT
 
@@ -247,16 +286,16 @@ class Message:
                 self._repeated_block = field
 
     @property
-    def id_(self):
+    def id_(self) -> int:
         """Public read only access to the message id"""
         return self._id
 
     @property
-    def fmt(self):
+    def fmt(self) -> str:
         """Return the format string for use with the struct package."""
         return ''.join([field.fmt for field in self._fields])
 
-    def parse(self, payload: bytes) -> namedtuple:
+    def parse(self, payload: bytes) -> Tuple[str, Any]:
         """Return a named tuple parsed from the provided payload.
 
         If the provided payload is not the same length as what is implied by the format string
@@ -268,6 +307,40 @@ class Message:
         it = iter(struct.unpack(self.fmt, payload))
 
         return self.name, self._nt(**{k: v for k, v in [f.parse(it) for f in self._fields] if k is not None})
+
+    def pack(self, values: Any) -> bytes:
+        """Return the bytes of the payload for this message from provided values."""
+        flat_values = []
+        if self._repeated_block:
+            if isinstance(values, dict):
+                repeated_list = values.get(self._repeated_block.name, [])
+            else:
+                repeated_list = getattr(values, self._repeated_block.name, [])
+            if not repeated_list:
+                raise ValueError("Repeated block {} cannot be empty".format(self._repeated_block.name))
+            self._repeated_block.repeat = len(repeated_list) - 1
+
+        for f in self._fields:
+            if isinstance(f, (BitField, RepeatedBlock)):
+                if isinstance(values, dict):
+                    val = values.get(f.name)
+                else:
+                    val = getattr(values, f.name)
+                if isinstance(f, BitField):
+                    flat_values.append(f.pack(val if val is not None else {}))
+                else:
+                    flat_values.extend(f.pack(val if val is not None else []))
+            elif isinstance(f, Field):
+                if isinstance(values, dict):
+                    val = values.get(f.name)
+                else:
+                    val = getattr(values, f.name)
+                flat_values.append(val if val is not None else (0 if f._type != 'C' else b'\x00'))
+            elif isinstance(f, PadByte):
+                pass
+            # PadByte doesn't take values
+
+        return struct.pack(self.fmt, *flat_values)
 
     def check_payload_length(self, payload_len: int):
         """Check whether payload_len is a valid length for this type of message.
@@ -304,7 +377,7 @@ class Cls:
     """Defines a UBX message class.
 
     The Classes are described in the data sheet:
-    https://www.u-blox.com/sites/default/files/products/documents/u-blox8-M8_ReceiverDescrProtSpec_%28UBX-13003221%29_Public.pdf
+    https://www.u-blox.com/sites/default/files/products/documents/u-blox8-M8_ReceiverDescrProtSpec_UBX-13003221.pdf
 
     The messages within the class can be provided via the constructor or via the `register_msg` method.
 
@@ -328,7 +401,7 @@ class Cls:
             self._messages[msg.id_] = msg
 
     @property
-    def id_(self):
+    def id_(self) -> int:
         """Public read only access to the class id"""
         return self._id
 
@@ -348,7 +421,7 @@ class Cls:
         # noinspection PyProtectedMember
         self._messages[msg._id] = msg
 
-    def parse(self, msg_id, payload):
+    def parse(self, msg_id, payload) -> Tuple[str, str, Any]:
         """Return a named tuple parsed from the provided payload.
 
         If the provided payload is not the same length as what is implied by the format string
@@ -377,7 +450,7 @@ class Parser:
     UBX packets from the device. The typical way to do this would be a serial package like pyserial, see the
     examples file.
 
-    # TODO add info about the message sending methods.
+    The parser now also includes methods to pack messages into packets for two-way communications.
     """
     PREFIX = bytes((0xB5, 0x62))
 
@@ -392,10 +465,82 @@ class Parser:
         """Register a message  class."""
         self.classes[cls.id_] = cls
 
-    def receive_from(self, stream) -> namedtuple:
+    def get_cls_by_name(self, name: str) -> Cls:
+        """Find a registered class by name."""
+        for cls in self.classes.values():
+            if cls.name == name:
+                return cls
+        raise ValueError("Unknown class name {}".format(name))
+
+    def get_msg_by_name(self, cls: Cls, msg_name: str) -> Message:
+        """Find a message by name within a class."""
+        for msg in cls._messages.values():
+            if msg.name == msg_name:
+                return msg
+        raise ValueError("Unknown message name {} in class {}".format(msg_name, cls.name))
+
+    def prepare_msg(self, cls_name: str, msg_name: str) -> dict:
+        """Prepare a mutable structure prefilled with defaults for packing."""
+        cls = self.get_cls_by_name(cls_name)
+        msg = self.get_msg_by_name(cls, msg_name)
+
+        def get_defaults(fields):
+            d = {}
+            for f in fields:
+                if isinstance(f, BitField):
+                    d[f.name] = {sf.name: 0 for sf in f._subfields}
+                elif isinstance(f, RepeatedBlock):
+                    d[f.name] = [get_defaults(f._fields)]
+                elif isinstance(f, Field):
+                    d[f.name] = 0 if f._type != 'C' else b'\x00'
+            return d
+
+        res = get_defaults(msg._fields)
+        # Include resolved IDs and names for later use in transfer_to
+        res['_cls_id'] = cls.id_
+        res['_msg_id'] = msg.id_
+        return res
+
+    def _pack_for_transfer(self, msg_dict: dict) -> bytes:
+        """Build a UBX packet from a message dictionary.
+        Raise ValueError in case of errors due to an invalid message dictionary."""
+        try:
+            cls_id = msg_dict['_cls_id']
+        except KeyError:
+            raise ValueError("Message dictionary must contain a `_cls_id` key, did you forget to call prepare_msg?")
+        try:
+            msg_id = msg_dict['_msg_id']
+        except KeyError:
+            raise ValueError("Message dictionary must contain a `_msg_id` key, did you forget to call prepare_msg?")
+
+        cls = self.classes[cls_id]
+        msg_obj = cls[msg_id]
+        payload = msg_obj.pack(msg_dict)
+
+        header = struct.pack('BBH', cls_id, msg_id, len(payload))
+        packet = self.PREFIX + header + payload
+        ck_a, ck_b = self._generate_fletcher_checksum(header + payload)
+        packet += struct.pack('BB', ck_a, ck_b)
+        return packet
+
+    def transfer_to(self, msg_dict: dict, stream):
+        """Build and write a UBX packet to a stream from a message dictionary."""
+        packet = self._pack_for_transfer(msg_dict)
+        stream.write(packet)
+        if hasattr(stream, 'flush'):
+            stream.flush()
+
+    async def transfer_to_async(self, msg_dict: dict, stream):
+        """Async version of transfer_to."""
+        packet = self._pack_for_transfer(msg_dict)
+        stream.write(packet)
+        if hasattr(stream, 'drain'):
+            await stream.drain()
+
+    def receive_from(self, stream) -> Tuple[str, str, Any]:
         """Receive a message from a stream and return as a namedtuple.
-        raise IOError in case of errors due to insufficient data.
-        raise ValueError in case of errors due to sufficient but invalid data.
+        Raise IOError in case of errors due to insufficient data.
+        Raise ValueError in case of errors due to sufficient but invalid data.
         """
         while True:
             # Search for the prefix
@@ -441,7 +586,7 @@ class Parser:
 
         return self.classes[msg_cls].parse(msg_id, buff[4:])
 
-    async def receive_from_async(self, stream) -> namedtuple:
+    async def receive_from_async(self, stream) -> Tuple[str, str, Any]:
         """Async version of receive_from."""
         while True:
             # Search for the prefix
@@ -480,7 +625,7 @@ class Parser:
         return self.classes[msg_cls].parse(msg_id, payload)
 
     @staticmethod
-    def _read_until(stream, terminator: bytes, size=None):
+    def _read_until(stream, terminator: bytes, size=None) -> bytes:
         """Read from the stream until the terminator byte/s are read.
         Return the bytes read including the termination bytes.
         """
@@ -500,7 +645,7 @@ class Parser:
         return bytes(line)
 
     @staticmethod
-    async def _read_until_async(stream, terminator: bytes, size=None):
+    async def _read_until_async(stream, terminator: bytes, size=None) -> bytes:
         """Async version of Parser._read_until."""
         term_len = len(terminator)
         line = bytearray()
@@ -532,10 +677,3 @@ class Parser:
 
         return bytes((check_a, check_b))
 
-    def prepare_msg(self, cls_name, msg_name):
-        # TODO find the class and message and return a blank message ready for filling
-        raise NotImplementedError('Sorry this has not been implemented yet!')
-
-    def transfer_to(self, msg, stream):
-        # TODO pack the message into bytes and transfer to the byte stream
-        raise NotImplementedError('Sorry this has not been implemented yet!')
