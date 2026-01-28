@@ -9,7 +9,7 @@ ACK_CLS = core.Cls(0x05, 'ACK', [
         core.Field('clsID', 'U1'),
         core.Field('msgID', 'U1'),
     ]),
-    core.Message(0x01, 'NAK', [
+    core.Message(0x00, 'NAK', [
         core.Field('clsID', 'U1'),
         core.Field('msgID', 'U1'),
     ])
